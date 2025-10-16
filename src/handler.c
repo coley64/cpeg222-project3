@@ -22,10 +22,22 @@ void uart_sendString(const char* str) {
 void SysTick_Handler(void) {
   // Only attempt to send if USART2 has been enabled
   if (USART2->CR1 & USART_CR1_UE) {
-    char str[20];
-    sprintf(str, "%.2f\n", distance);
-    uart_sendString(str);
+    if (inches) {
+      char str[20];
+      sprintf(str, "%.2f inch\n", distance);
+      uart_sendString(str);
+    }
+    else {
+      char str[20];
+      sprintf(str, "%.2f cm\n", distance*2.54f);
+      uart_sendString(str);
+    }
   }
+
+  // TRIG_PORT->ODR |= (1 << TRIG_PIN); // Set the trigger pin high
+  // currentEdge = TIM5->CNT; // Get the current timer count
+  // while ((TIM5->CNT - currentEdge) < 10); // Wait for 10us
+  // TRIG_PORT->ODR &= ~(1 << TRIG_PIN); // Set the trigger pin low
 }
 
 void TIM2_IRQHandler(void){
@@ -43,7 +55,7 @@ void EXTI15_10_IRQHandler(void) { // External interrupt handler for button press
     } else {
       inches = true;
     }
-    EXTI->PR |= (1 << BTN_PIN);    // Clear the pending interrupt
+    EXTI->PR |= (1 << BTN_PIN); // Clear the pending interrupt
   }
 }
 
@@ -71,11 +83,4 @@ void configure_tim5(void){
   TIM5->ARR = 0xFFFFFFFF; // Auto-reload: Max value for free running
   TIM5->EGR = TIM_EGR_UG;  // Update registers
   TIM5->CR1 = TIM_CR1_CEN; // Enable TIM5
-}
-void SysTick_Handler(void) { // SysTick interrupt handler
-//This interrupt sends a 10us trigger pulse to the HC-SR04 every 0.5 seconds
-TRIG_PORT->ODR |= (1 << TRIG_PIN); // Set the trigger pin high
-currentEdge = TIM5->CNT; // Get the current timer count
-while ((TIM5->CNT - currentEdge) < 10); // Wait for 10us
-TRIG_PORT->ODR &= ~(1 << TRIG_PIN); // Set the trigger pin low
 }
