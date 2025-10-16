@@ -71,3 +71,10 @@ void configure_tim5(void){
   TIM5->EGR = TIM_EGR_UG;  // Update registers
   TIM5->CR1 = TIM_CR1_CEN; // Enable TIM5
 }
+void SysTick_Handler(void) { // SysTick interrupt handler
+//This interrupt sends a 10us trigger pulse to the HC-SR04 every 0.5 seconds
+TRIG_PORT->ODR |= (1 << TRIG_PIN); // Set the trigger pin high
+currentEdge = TIM5->CNT; // Get the current timer count
+while ((TIM5->CNT - currentEdge) < 10); // Wait for 10us
+TRIG_PORT->ODR &= ~(1 << TRIG_PIN); // Set the trigger pin low
+}
