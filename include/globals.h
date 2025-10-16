@@ -9,5 +9,7 @@ extern volatile int milliSec;
 extern volatile int digitSelect;
 extern volatile uint32_t currentPress; // variable to track time between button presses
 extern volatile uint32_t lastPress; // variable to track time between button presses
+extern volatile bool inches;
+extern volatile float distance; // distance in hundredths of cm or inches
 
 #endif

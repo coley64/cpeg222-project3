@@ -22,7 +22,9 @@ void uart_sendString(const char* str) {
 void SysTick_Handler(void) {
   // Only attempt to send if USART2 has been enabled
   if (USART2->CR1 & USART_CR1_UE) {
-    uart_sendString("SysTick alive!\r\n");
+    char str[20];
+    sprintf(str, "%.2f\n", distance);
+    uart_sendString(str);
   }
 }
 
@@ -36,11 +38,11 @@ void TIM2_IRQHandler(void){
 
 void EXTI15_10_IRQHandler(void) { // External interrupt handler for button press
   if (EXTI->PR & (1 << BTN_PIN)) { // Check if the interrupt is from BTN_PIN
-    currentPress = TIM5->CNT; // Get the current timer count
-    if ((currentPress - lastPress) < 250UL) { // If the time between presses is less than 1 second
-      milliSec = 0; // Reset the counter
+    if (inches) {
+      inches = false;
+    } else {
+      inches = true;
     }
-    lastPress = currentPress; // Update lastPress2 to currentPress
     EXTI->PR |= (1 << BTN_PIN);    // Clear the pending interrupt
   }
 }
@@ -64,7 +66,6 @@ void configure_button_interrupt(void){
   NVIC_SetPriority(EXTI15_10_IRQn, 0);    // Set priority for EXTI
 }
 void configure_tim5(void){
-    // 4. Configure TIM5 as a free running timer
   RCC->APB1ENR |= RCC_APB1ENR_TIM5EN; // Enable TIM5 clock
   TIM5->PSC = 15999; // Prescaler: (16MHz/16000 = 1kHz, 1msec period)
   TIM5->ARR = 0xFFFFFFFF; // Auto-reload: Max value for free running

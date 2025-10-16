@@ -6,7 +6,7 @@
 // * If distance > 99.99, display 99.99 on SSDs. 
 // * User Button (PC13) with interrupt is used to toggle between inches and centimeters.
 // * If the distance is less than 10.00, the first SSD should be blank instead of 0.
-// * Use the hardware SysTick timer for 0.5-second interrupts to detect the distance.
+// * Use the hardware SysTick timer for 0.5-second interrupts to detect the distance. ✅
 // * Write the distance (every 0.5 s)  to the serial monitor (USART2) at 115200 baud
 // * Use a general-purpose timer (like TIM2) to generate a 0.5 ms interrupt to update the SSD array every 2 milliseconds. 
 // * Use another timer to measure pulse widths.

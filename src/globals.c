@@ -6,3 +6,5 @@ volatile int milliSec = 0;
 volatile int digitSelect = 0;
 volatile uint32_t currentPress = 0; // variable to track time between button presses
 volatile uint32_t lastPress = 0; // variable to track time between button presses
+volatile bool inches = false;
+volatile float distance = 0.0f; // distance in hundredths of cm or inches
