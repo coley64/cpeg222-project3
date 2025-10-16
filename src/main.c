@@ -4,7 +4,7 @@
 // 
 // * Display the distance in hundredths of cm/inch on the SSDs. 
 // * If distance > 99.99, display 99.99 on SSDs. 
-// * User Button (PC13) with interrupt is used to toggle between inches and centimeters.
+// * User Button (PC13) with interrupt is used to toggle between inches and centimeters. che
 // * If the distance is less than 10.00, the first SSD should be blank instead of 0.
 // * Use the hardware SysTick timer for 0.5-second interrupts to detect the distance. ✅
 // * Write the distance (every 0.5 s)  to the serial monitor (USART2) at 115200 baud ✅

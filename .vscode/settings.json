@@ -66,6 +66,7 @@
     "stm32f4xx.h": "c",
     "globals.h": "c",
     "stdbool.h": "c",
-    "handler.h": "c"
+    "handler.h": "c",
+    "ssd_array.h": "c"
   }
 }

@@ -7,6 +7,10 @@
 #define BTN_PIN    (13) // Assuming User Button is connected to GPIOC pin 13
 #define BTN_PORT   (GPIOC)
 #define FREQUENCY 16000000 // HSI clock frequency
+#define TRIG_PORT GPIOA
+#define TRIG_PIN  (4) // PA4
+#define ECHO_PORT GPIOB
+#define ECHO_PIN  (0) // PB0
 
 // UART helper functions
 void uart_sendChar(char c) {
@@ -19,6 +23,7 @@ void uart_sendString(const char* str) {
   }
 }
 
+//sysTick interrupt handler for sending distance to USART2
 void SysTick_Handler(void) {
   // Only attempt to send if USART2 has been enabled
   if (USART2->CR1 & USART_CR1_UE) {
@@ -33,18 +38,25 @@ void SysTick_Handler(void) {
       uart_sendString(str);
     }
   }
-
-  // TRIG_PORT->ODR |= (1 << TRIG_PIN); // Set the trigger pin high
-  // currentEdge = TIM5->CNT; // Get the current timer count
-  // while ((TIM5->CNT - currentEdge) < 10); // Wait for 10us
-  // TRIG_PORT->ODR &= ~(1 << TRIG_PIN); // Set the trigger pin low
 }
 
+// tim2 interrupt handler for SSD multiplexing
 void TIM2_IRQHandler(void){
   if(TIM2->SR & TIM_SR_UIF){ // Check if the update interrupt flag is set
     SSD_update(digitSelect, milliSec, 3); // Update the SSD with the current value of milliSec
     digitSelect = (digitSelect + 1) % 4; // Cycle through digitSelect values 0 to 3
     TIM2->SR &= ~TIM_SR_UIF; // Clear the update interrupt flag
+  }
+}
+
+// tim5 interrupt handler for measuring pulse width, fires every 500ms
+void TIM5_IRQHandler(void){
+  if(TIM5->SR & TIM_SR_UIF){ // Check if the update interrupt flag is set
+    TRIG_PORT->ODR |= (1 << TRIG_PIN); // Set the trigger pin high
+    currentEdge = TIM5->CNT; // Get the current timer count
+    while ((TIM5->CNT - currentEdge) < 10); // Wait for 10us
+    TRIG_PORT->ODR &= ~(1 << TRIG_PIN); // Set the trigger pin low
+    TIM5->SR &= ~TIM_SR_UIF; // Clear the update interrupt flag
   }
 }
 
@@ -79,8 +91,11 @@ void configure_button_interrupt(void){
 }
 void configure_tim5(void){
   RCC->APB1ENR |= RCC_APB1ENR_TIM5EN; // Enable TIM5 clock
-  TIM5->PSC = 15999; // Prescaler: (16MHz/16000 = 1kHz, 1msec period)
-  TIM5->ARR = 0xFFFFFFFF; // Auto-reload: Max value for free running
-  TIM5->EGR = TIM_EGR_UG;  // Update registers
-  TIM5->CR1 = TIM_CR1_CEN; // Enable TIM5
+  TIM5->PSC = 15999; // Prescaler: (16MHz / 16000 = 1kHz, 1ms per tick)
+  TIM5->ARR = 499;   // Auto-reload: 500ms period (500 ticks of 1ms)
+  TIM5->DIER |= TIM_DIER_UIE; // Enable update interrupt
+  TIM5->SR &= ~TIM_SR_UIF;    // Clear any pending flag
+  NVIC_EnableIRQ(TIM5_IRQn);  // Enable TIM5 interrupt in NVIC
+  NVIC_SetPriority(TIM5_IRQn, 1); // Set interrupt priority
+  TIM5->CR1 = TIM_CR1_CEN;    // Enable counter
 }
