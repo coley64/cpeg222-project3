@@ -54,6 +54,7 @@ int main(void) {
   configure_tim2();
   configure_button_interrupt();
   configure_tim5();
+  configure_tim3();
 
 
 

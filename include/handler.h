@@ -10,5 +10,8 @@ void configure_button_interrupt(void);
 void configure_tim5(void);
 void uart_sendChar(char c);
 void uart_sendString(const char* str);
+void EXTI0_IRQHandler(void);
+void TIM5_IRQHandler(void);
+void configure_tim3(void);
 
 #endif
