@@ -24,6 +24,10 @@
 #define BAUDRATE 115200 // Baud rate for USART2
 #define BTN_PIN (13) // Assuming User Button is connected to GPIOC pin 13
 #define BTN_PORT (GPIOC)
+#define TRIG_PORT GPIOA
+#define TRIG_PIN  (4) // PA4
+#define ECHO_PORT GPIOB
+#define ECHO_PIN  (0) // PB0
 
 int main(void) {
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN;
@@ -31,11 +35,6 @@ int main(void) {
   RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
   RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
-  SSD_init(); // Initialize SSD GPIO pins, ABC clocks
-  SysTick_Config(FREQUENCY/2); // Configure SysTick for 500 millisecond interrupts
-  configure_tim2();
-  configure_button_interrupt();
-  configure_tim5();
   GPIOA->MODER &= ~((3 << (UART_TX_PIN*2)) | (3 << (UART_RX_PIN*2))); // Clear mode bits
   GPIOA->MODER |= (2 << (UART_TX_PIN*2)) | (2 << (UART_RX_PIN*2)); // AF mode
   GPIOA->AFR[0] &= ~((0xF << (UART_TX_PIN*4)) | (0xF << (UART_RX_PIN*4))); // clear AF bits
@@ -44,6 +43,20 @@ int main(void) {
   USART2->BRR = FREQUENCY / BAUDRATE;
   USART2->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UE; // Enable TX, RX, USART
   
+    // TRIG (PA4) → output
+  TRIG_PORT->MODER &= ~(3 << (TRIG_PIN * 2));
+  TRIG_PORT->MODER |=  (1 << (TRIG_PIN * 2));  // Output mode
+
+  // ECHO (PB0) → input
+  ECHO_PORT->MODER &= ~(3 << (ECHO_PIN * 2));  // Input mode
+  SSD_init(); // Initialize SSD GPIO pins, ABC clocks
+  SysTick_Config(FREQUENCY/2); // Configure SysTick for 500 millisecond interrupts
+  configure_tim2();
+  configure_button_interrupt();
+  configure_tim5();
+
+
+
   milliSec = 0; // Set display to 0 initially
 
   // confirm usart + serial moniter is working

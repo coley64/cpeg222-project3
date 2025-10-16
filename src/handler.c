@@ -12,6 +12,11 @@
 #define ECHO_PORT GPIOB
 #define ECHO_PIN  (0) // PB0
 
+volatile uint32_t echo_start = 0;
+volatile uint32_t echo_end = 0;
+volatile bool echo_done = false;
+int currentEdge = 0; // Variable to store the timer count at the current edge
+
 // UART helper functions
 void uart_sendChar(char c) {
   while (!(USART2->SR & USART_SR_TXE)); // Wait until transmit data register is empty
@@ -53,8 +58,8 @@ void TIM2_IRQHandler(void){
 void TIM5_IRQHandler(void){
   if(TIM5->SR & TIM_SR_UIF){ // Check if the update interrupt flag is set
     TRIG_PORT->ODR |= (1 << TRIG_PIN); // Set the trigger pin high
-    currentEdge = TIM5->CNT; // Get the current timer count
-    while ((TIM5->CNT - currentEdge) < 10); // Wait for 10us
+    currentEdge = TIM3->CNT; // Get the current timer count
+    while ((TIM3->CNT - currentEdge) < 10); // Wait for 10us
     TRIG_PORT->ODR &= ~(1 << TRIG_PIN); // Set the trigger pin low
     TIM5->SR &= ~TIM_SR_UIF; // Clear the update interrupt flag
   }
@@ -71,6 +76,22 @@ void EXTI15_10_IRQHandler(void) { // External interrupt handler for button press
   }
 }
 
+void EXTI0_IRQHandler(void) {
+    if (EXTI->PR & (1 << ECHO_PIN)) {
+        if (ECHO_PORT->IDR & (1 << ECHO_PIN)) {
+            // Rising edge → start timing
+            echo_start = TIM3->CNT;
+        } else {
+            // Falling edge → stop timing
+            echo_end = TIM3->CNT;
+            uint32_t pulse = echo_end - echo_start;
+            distance = pulse / 58.0f; // cm (HC-SR04 constant)
+            echo_done = true;
+        }
+        EXTI->PR |= (1 << ECHO_PIN); // Clear interrupt flag
+    }
+}
+
 void configure_tim2(void){
   TIM2->PSC = 15; // Prescaler: (16MHz/16 = 1MHz)
   TIM2->ARR = 499; // Auto-reload: 1MHz/2000 = 500Hz (0.5ms period)
@@ -80,6 +101,7 @@ void configure_tim2(void){
   NVIC_SetPriority(TIM2_IRQn, 1); // Set priority for TIM2
   TIM2->CR1 = (1 << 0); // Enable TIM2
 }
+
 void configure_button_interrupt(void){
   BTN_PORT->MODER &= ~(3 << (BTN_PIN * 2)); // Set BTN_PIN as input by clearing MODER bits
   EXTI->IMR |= (1 << BTN_PIN);  // Unmask EXTI line 13
@@ -89,6 +111,8 @@ void configure_button_interrupt(void){
   NVIC_EnableIRQ(EXTI15_10_IRQn); // Enable EXTI line[15:10] interrupts in NVIC
   NVIC_SetPriority(EXTI15_10_IRQn, 0);    // Set priority for EXTI
 }
+
+// Configure TIM5 to generate an interrupt every 500ms to handle ultrasonic sensor triggering
 void configure_tim5(void){
   RCC->APB1ENR |= RCC_APB1ENR_TIM5EN; // Enable TIM5 clock
   TIM5->PSC = 15999; // Prescaler: (16MHz / 16000 = 1kHz, 1ms per tick)
@@ -98,4 +122,13 @@ void configure_tim5(void){
   NVIC_EnableIRQ(TIM5_IRQn);  // Enable TIM5 interrupt in NVIC
   NVIC_SetPriority(TIM5_IRQn, 1); // Set interrupt priority
   TIM5->CR1 = TIM_CR1_CEN;    // Enable counter
+}
+
+// configure tim3 as a background timer
+void configure_tim3(void) {
+    RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;   // Enable TIM3 clock
+    TIM3->PSC = 15;        // Prescaler: (16 MHz / (15+1)) = 1 MHz → 1 tick = 1 µs
+    TIM3->ARR = 0xFFFFFFFF; // Let it count full 32-bit range (about 71 minutes before overflow)
+    TIM3->EGR = TIM_EGR_UG; // Update registers
+    TIM3->CR1 |= TIM_CR1_CEN; // Start TIM3
 }
