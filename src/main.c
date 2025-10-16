@@ -1,5 +1,5 @@
 // ****************************************************************
-// * TEAM50: T. LUM and R. MARTIN
+// * TEAM50: N. West and H. Collins
 // * CPEG222 Project 3A Demo, 10/6/25
 // 
 // * Display the distance in hundredths of cm/inch on the SSDs. 
