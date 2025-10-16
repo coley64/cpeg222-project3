@@ -85,7 +85,7 @@ void EXTI0_IRQHandler(void) {
             // Falling edge → stop timing
             echo_end = TIM3->CNT;
             uint32_t pulse = echo_end - echo_start;
-            distance = pulse / 58.0f; // cm (HC-SR04 constant)
+            distance = pulse / 58.3f; // cm (HC-SR04 constant)
             echo_done = true;
         }
         EXTI->PR |= (1 << ECHO_PIN); // Clear interrupt flag
