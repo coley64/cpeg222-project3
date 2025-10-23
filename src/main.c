@@ -53,9 +53,9 @@ void SysTick_Handler(void) {
   if (USART2->CR1 & USART_CR1_UE) {
     char str[20];
       if (inches) {
-        sprintf(str, "%.2f inch\n", distance);
+        sprintf(str, "%.2f inch\tx degrees\n", distance);
       } else { 
-        sprintf(str, "%.2f cm\n", distance*2.54f);
+        sprintf(str, "%.2f cm\tx degrees\n", distance*2.54f);
       }
       uart_sendString(str);
   }
