@@ -16,6 +16,7 @@
 #include "configure.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include "UART.h"
 
 #define FREQUENCY 16000000UL
 #define UART_PORT GPIOA
@@ -37,27 +38,17 @@ volatile bool echo_received = false;
 volatile bool trigger_high = false;
 volatile uint32_t currentEdge = 0;
 
-// --------------------- UART ---------------------
-void uart_sendChar(char c) {
-    while (!(USART2->SR & USART_SR_TXE));
-    USART2->DR = c;
-}
-
-void uart_sendString(const char* str) {
-    while (*str) uart_sendChar(*str++);
-}
-
 // --------------------- Interrupt Handlers ---------------------
 // updates uart w/ distance + sends pulse to trig
 void SysTick_Handler(void) {
   if (USART2->CR1 & USART_CR1_UE) {
-    char str[20];
+    char str[64];
       if (inches) {
         sprintf(str, "%.2f inch\tx degrees\n", distance);
       } else { 
         sprintf(str, "%.2f cm\tx degrees\n", distance*2.54f);
       }
-      uart_sendString(str);
+      uart_send_string(str);
   }
   //This interrupt sends a 10us trigger pulse to the HC-SR04 every 0.5 seconds
   TRIG_PORT->ODR |= (1 << TRIG_PIN); // Set the trigger pin high
@@ -128,7 +119,7 @@ int main(void) {
 
     // ------------------ Startup message ------------------
     for(volatile int i=0; i<1000000; i++); // Brief delay
-    uart_sendString("CPEG222 Demo Program!\r\nRunning at 115200 baud...\r\n");
+    uart_send_string("CPEG222 Demo Program!\r\nRunning at 115200 baud...\r\n");
 
     // ------------------ Main loop ------------------
     while(1) {

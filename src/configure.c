@@ -1,8 +1,6 @@
 #include "configure.h"
 #include "stm32f4xx.h"  // include MCU definitions
 
-#define UART_TX_PIN 2 // PA2
-#define UART_RX_PIN 3 // PA3
 #define FREQUENCY 16000000UL
 #define BAUDRATE 115200
 #define TRIG_PIN 4
@@ -14,14 +12,7 @@ void configure_clocks(void){
     RCC->APB1ENR |= RCC_APB1ENR_TIM2EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM5EN | RCC_APB1ENR_USART2EN;
     RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 }
-void configure_uart(void){
-    GPIOA->MODER &= ~((3 << (UART_TX_PIN*2)) | (3 << (UART_RX_PIN*2)));
-    GPIOA->MODER |= (2 << (UART_TX_PIN*2)) | (2 << (UART_RX_PIN*2));
-    GPIOA->AFR[0] &= ~((0xF << (UART_TX_PIN*4)) | (0xF << (UART_RX_PIN*4)));
-    GPIOA->AFR[0] |= (7 << (UART_TX_PIN*4)) | (7 << (UART_RX_PIN*4));
-    USART2->BRR = FREQUENCY / BAUDRATE;
-    USART2->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
-}
+
 void configure_trig_echo_button(void){
     //trig
     GPIOA->MODER &= ~(3 << (TRIG_PIN*2));
