@@ -31,7 +31,7 @@
 #define ECHO_PIN 0
 
 // global variables
-volatile bool inches = false;
+volatile bool inches = true;
 volatile float distance = 0.0f;
 volatile int digitSelect = 0;
 volatile uint32_t echo_start = 0;
@@ -56,9 +56,9 @@ void SysTick_Handler(void) {
   if (USART2->CR1 & USART_CR1_UE) {
     char str[20];
       if (inches) {
-        sprintf(str, "%.2f inch\n", distance * 0.3937f);
+        sprintf(str, "%.2f inch\n", distance);
       } else { 
-        sprintf(str, "%.2f cm\n", distance);
+        sprintf(str, "%.2f cm\n", distance*2.54f);
       }
       uart_sendString(str);
   }
@@ -73,9 +73,15 @@ void SysTick_Handler(void) {
 void TIM2_IRQHandler(void) {
     if(TIM2->SR & TIM_SR_UIF) {
       if (inches) {
-        SSD_update(digitSelect, distance*100*0.3937f, 2);
-      } else { 
-        SSD_update(digitSelect, distance*100, 2);
+          // Cap distance at 99.99
+          if (distance > 99.99f) {
+            SSD_update(digitSelect, 9999, 2);
+          } else { SSD_update(digitSelect, distance*100, 2);}
+      } else if (!inches) { 
+        // Cap distance at 99.99
+        if (distance*2.54 > 99.99f) {
+            SSD_update(digitSelect, 9999, 2);
+        } else {SSD_update(digitSelect, distance*2.54*100, 2);}
       }
         digitSelect = (digitSelect + 1) % 4;
         TIM2->SR &= ~TIM_SR_UIF;
@@ -106,16 +112,11 @@ void EXTI0_IRQHandler(void) {
             } else {
                 pulse_width = (0xFFFFFFFF - echo_start) + echo_end;
             }
-            distance = pulse_width / 58.0f;
-            
-            // Cap distance at 99.99
-            if (distance > 99.99f) {
-                distance = 99.99f;
-            }
+            distance = pulse_width / 148.0f;
             echo_received = true;
        }
         EXTI->PR |= (1 << ECHO_PIN); // Clear pending bit
-    }
+  }
 }
 
 // --------------------- Main ---------------------
