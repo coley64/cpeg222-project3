@@ -13,17 +13,14 @@
 // ****************************************************************
 #include "stm32f4xx.h"
 #include "SSD_Array.h"
+#include "configure.h"
 #include <stdbool.h>
 #include <stdio.h>
 
-#define UART_TX_PIN 2 // PA2
-#define UART_RX_PIN 3 // PA3
-#define UART_PORT GPIOA
 #define FREQUENCY 16000000UL
-#define BAUDRATE 115200
+#define UART_PORT GPIOA
 #define BTN_PIN 13
 #define BTN_PORT GPIOC
-
 // trig pin = PA4, echo pin = PB0
 #define TRIG_PORT GPIOA
 #define TRIG_PIN 4
@@ -119,69 +116,16 @@ void EXTI0_IRQHandler(void) {
   }
 }
 
-// --------------------- Main ---------------------
 int main(void) {
-    // ------------------ Clocks ------------------
-    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOCEN;
-    RCC->APB1ENR |= RCC_APB1ENR_TIM2EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM5EN | RCC_APB1ENR_USART2EN;
-    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
-
-    // ------------------ UART ------------------
-    GPIOA->MODER &= ~((3 << (UART_TX_PIN*2)) | (3 << (UART_RX_PIN*2)));
-    GPIOA->MODER |= (2 << (UART_TX_PIN*2)) | (2 << (UART_RX_PIN*2));
-    GPIOA->AFR[0] &= ~((0xF << (UART_TX_PIN*4)) | (0xF << (UART_RX_PIN*4)));
-    GPIOA->AFR[0] |= (7 << (UART_TX_PIN*4)) | (7 << (UART_RX_PIN*4));
-    USART2->BRR = FREQUENCY / BAUDRATE;
-    USART2->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
-
-    // ------------------ TRIG (Output) ------------------
-    GPIOA->MODER &= ~(3 << (TRIG_PIN*2));
-    GPIOA->MODER |= (1 << (TRIG_PIN*2)); // Output mode
-    GPIOA->ODR &= ~(1 << TRIG_PIN); // Start low
-
-    // ------------------ ECHO (Input) ------------------
-    GPIOB->PUPDR &= ~(3 << (ECHO_PIN*2));
-    GPIOB->PUPDR |=  (1 << (ECHO_PIN*2)); // pull-down on PB0 (stable low)
-    GPIOB->MODER &= ~(3 << (ECHO_PIN*2)); // Input mode
-    // Configure EXTI for ECHO pin (PB0)
-    SYSCFG->EXTICR[0] &= ~(0xF << (0*4)); // Clear first 4 bits
-    SYSCFG->EXTICR[0] |= (1 << (0*4));    // PB0 (0b0001 for GPIOB)
-    EXTI->IMR |= (1 << ECHO_PIN);         // Enable interrupt
-    EXTI->RTSR |= (1 << ECHO_PIN);        // Rising edge trigger
-    EXTI->FTSR |= (1 << ECHO_PIN);        // Falling edge trigger
-    NVIC_EnableIRQ(EXTI0_IRQn);
-    NVIC_SetPriority(EXTI0_IRQn, 0);
-
-    // ------------------ Button ------------------
-    GPIOC->MODER &= ~(3 << (BTN_PIN*2)); // Input mode
-    // Configure EXTI for Button (PC13)
-    SYSCFG->EXTICR[3] &= ~(0xF << 4);    // Clear bits for EXTI13
-    SYSCFG->EXTICR[3] |= (2 << 4);       // PC13 (0b0010 for GPIOC)
-    EXTI->IMR |= (1 << BTN_PIN);         // Enable interrupt
-    EXTI->FTSR |= (1 << BTN_PIN);        // Falling edge trigger (button press)
-    NVIC_EnableIRQ(EXTI15_10_IRQn);
-    NVIC_SetPriority(EXTI15_10_IRQn, 1);
-
-    // ------------------ SSD + Timers ------------------
+    configure_clocks();
+    configure_uart();
+    configure_trig_echo_button();
+    configure_button();
     SSD_init();
-    
-    // TIM2 for SSD multiplexing (0.5ms interrupt)
-    TIM2->PSC = 16 - 1;      // Divide by 16
-    TIM2->ARR = 500 - 1;     // 0.5ms at 1MHz
-    TIM2->DIER |= TIM_DIER_UIE;
-    TIM2->SR &= ~TIM_SR_UIF;
-    NVIC_EnableIRQ(TIM2_IRQn);
-    NVIC_SetPriority(TIM2_IRQn, 2);
-    TIM2->CR1 |= TIM_CR1_CEN;
-    
-    // TIM5 as free-running timer for pulse measurement (1MHz)
-    RCC->APB1ENR |= RCC_APB1ENR_TIM5EN; // enable TIM5 clock
-    TIM5->PSC = 16 - 1;                  // 16 MHz / 16 = 1 MHz → 1 µs tick
-    TIM5->ARR = 0xFFFFFFFF;              // free-run to max
-    TIM5->EGR = TIM_EGR_UG;              // force update
-    TIM5->CR1 |= TIM_CR1_CEN;            // start counter
-    
+    configure_tim2();
+    configure_tim5();  
     SysTick_Config(FREQUENCY/2); // 0.5 second interrupts
+
     // ------------------ Startup message ------------------
     for(volatile int i=0; i<1000000; i++); // Brief delay
     uart_sendString("CPEG222 Demo Program!\r\nRunning at 115200 baud...\r\n");

@@ -67,6 +67,7 @@
     "globals.h": "c",
     "stdbool.h": "c",
     "handler.h": "c",
-    "ssd_array.h": "c"
+    "ssd_array.h": "c",
+    "configure.h": "c"
   }
 }
