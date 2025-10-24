@@ -68,6 +68,7 @@
     "stdbool.h": "c",
     "handler.h": "c",
     "ssd_array.h": "c",
-    "configure.h": "c"
+    "configure.h": "c",
+    "stdio.h": "c"
   }
 }

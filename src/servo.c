@@ -42,36 +42,3 @@
 // 	pulse_width = 1500 - (500 * (angle/45.0)); // Map angle to pulse width (1ms to 2ms)
 // 	TIM3->CCR1 = pulse_width;
 // }
-
-// int main(void) {
-// 	UART2_Init();
-// 	PWM_Output_PC6_Init();
-// 	uart2_send_string("CPEG222 Standard Servo Demo Program!\r\n");
-// 	uart2_send_string("Setting angle to 0 degrees.\r\n");
-// 	int angle = 0;
-// 	servo_angle_set(angle);
-// 	uart2_send_string("Is this thing working?\n");
-// 	for (volatile int i = 0; i < 10000000UL; ++i); // long delay to adjust the horn at 90 degrees
-// 	while (1) {
-// 		for(int angle = -45; angle <= 45; angle += 5) {
-// 			servo_angle_set(angle);
-// 			uart2_send_string("angle(deg): ");
-// 			uart2_send_int32(angle);
-// 			uart2_send_string("\tservo pulsewidth(us): ");
-// 			uart2_send_int32(pulse_width);
-// 			uart2_send_string("\r\n");
-// 			for (volatile int i = 0; i < 1000000; ++i); // Simple delay	
-// 		}
-// 		for (volatile int i = 0; i < 1000000; ++i); // Simple delay
-// 		for(int angle = 45; angle >= -45; angle -= 5) {
-// 			servo_angle_set(angle);
-// 			uart2_send_string("angle(deg): ");
-// 			uart2_send_int32(angle);
-// 			uart2_send_string("\tservo pulsewidth(us): ");
-// 			uart2_send_int32(pulse_width);
-// 			uart2_send_string("\r\n");
-// 			for (volatile int i = 0; i < 1000000; ++i); // Simple delay
-// 		}
-// 		for (volatile int i = 0; i < 1000000; ++i); // Simple delay	
-// 	}
-// }
