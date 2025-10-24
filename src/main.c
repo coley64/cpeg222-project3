@@ -27,6 +27,7 @@
 #define TRIG_PIN 4
 #define ECHO_PORT GPIOB
 #define ECHO_PIN 0
+void servo_angle_set(int angle);
 
 // global variables
 volatile bool inches = true;
@@ -37,7 +38,7 @@ volatile uint32_t echo_end = 0;
 volatile bool echo_received = false;
 volatile bool trigger_high = false;
 volatile uint32_t currentEdge = 0;
-volatile uint32_t angle = 0;
+volatile int angle = 0;
 uint32_t pulse_width = 0; //removed volatile not used in an interrupt
 volatile bool angle_increasing = true;
 
@@ -47,17 +48,18 @@ void SysTick_Handler(void) {
   if (USART2->CR1 & USART_CR1_UE) {
     if (angle_increasing) {
         angle += 5;
+        servo_angle_set(angle);
         if (angle >= 45) {
-            angle = 45;
             angle_increasing = false;
         }
     } else {
         angle -= 5;
+        servo_angle_set(angle);
         if (angle <= -45) {
-            angle = -45;
-            angle_increasing = true;
+          angle_increasing = true;
         }
     }
+
     char str[64];
       if (inches) {
         sprintf(str, "%.2f inch\t", distance);
