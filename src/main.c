@@ -69,6 +69,8 @@ void SysTick_Handler(void) {
       uart_send_string(str);
       uart_send_string("angle(deg): ");
       uart_send_int32(angle);
+      uart_send_string("\t   servo puslewidth(us): ");
+      uart_send_int32(pulse_width);
       uart_send_string("\n");
   }
 
